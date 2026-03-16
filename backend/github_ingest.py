@@ -330,7 +330,7 @@ class GitHubIngestor:
         for branch in branches:
             zip_url = f"https://github.com/{self.repo}/archive/refs/heads/{branch}.zip"
             logger.info(f"Trying branch: {branch}")
-            response = requests.get(zip_url, timeout=30)
+            response = requests.get(zip_url, stream=True, timeout=60)
             
             if response.status_code == 200:
                 logger.info(f"Successfully downloaded ZIP from {branch} branch")
@@ -338,9 +338,20 @@ class GitHubIngestor:
         else:
             raise Exception(f"Could not download repository {self.repo} - no valid branch found")
         
+        # Limit download size (50MB max)
+        max_size = 50 * 1024 * 1024
+        content = b""
+        downloaded = 0
+        
+        for chunk in response.iter_content(chunk_size=8192):
+            downloaded += len(chunk)
+            if downloaded > max_size:
+                raise Exception(f"Repository too large (>50MB). Try a smaller repo.")
+            content += chunk
+        
         # Process ZIP file in memory
         try:
-            with zipfile.ZipFile(io.BytesIO(response.content)) as z:
+            with zipfile.ZipFile(io.BytesIO(content)) as z:
                 logger.info(f"ZIP contains {len(z.infolist())} items")
                 
                 for file_info in z.infolist():

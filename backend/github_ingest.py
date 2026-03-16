@@ -368,6 +368,11 @@ class GitHubIngestor:
                             continue
                     
                     try:
+                        # Skip files larger than 1MB
+                        if file_info.file_size > 1024 * 1024:
+                            logger.info(f"Skipping large file: {file_path} ({file_info.file_size} bytes)")
+                            continue
+                        
                         with z.open(file_info) as f:
                             content = f.read().decode('utf-8', errors='ignore')
                         

@@ -76,29 +76,36 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# =============================================================================
 # CORS CONFIGURATION (Phase 7 - Updated for Production)
 # =============================================================================
 
 # Get frontend URL from environment (default: localhost:3000)
-frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
 
 # Allow multiple origins for development and production
 allowed_origins = [
     "http://localhost:3000",
     "http://localhost:3001",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
     frontend_url,
 ]
 
 # Add production URLs if specified
 production_url = os.getenv("PRODUCTION_URL")
 if production_url:
-    allowed_origins.append(production_url)
+    allowed_origins.append(production_url.rstrip("/"))
+
+# Sanitize: Remove trailing slashes and common Vercel/HF variants
+sanitized_origins = []
+for origin in allowed_origins:
+    if origin:
+        sanitized_origins.append(origin.rstrip("/"))
+        # Add variant without https:// if it was somehow provided with it (though unlikely to be needed by browser)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=sanitized_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -366,11 +373,15 @@ async def ingest_course(request: Optional[IngestRequest] = None):
                 detail=result.get("message", "Ingestion failed")
             )
     
+    except HTTPException:
+        # Re-raise HTTP exceptions (from validation or intentional errors)
+        raise
     except Exception as e:
-        logger.error(f"Ingestion failed: {e}")
+        logger.error(f"Ingestion failed with unexpected error: {e}")
+        # Return the actual error message for debugging
         raise HTTPException(
             status_code=500,
-            detail=f"Ingestion failed: {str(e)}"
+            detail=f"Backend Error: {str(e)}"
         )
 
 

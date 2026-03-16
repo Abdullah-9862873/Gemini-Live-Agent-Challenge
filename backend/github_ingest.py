@@ -390,18 +390,18 @@ class GitHubIngestor:
         
         # Limit download size (50MB max)
         max_size = 50 * 1024 * 1024
-        content = b""
+        zip_bytes = b""
         downloaded = 0
         
-        for chunk in response.iter_content(chunk_size=8192):
-            downloaded += len(chunk)
+        for data_chunk in response.iter_content(chunk_size=8192):
+            downloaded += len(data_chunk)
             if downloaded > max_size:
                 raise Exception(f"Repository too large (>50MB). Try a smaller repo.")
-            content += chunk
+            zip_bytes += data_chunk
         
         # Process ZIP file in memory
         try:
-            with zipfile.ZipFile(io.BytesIO(content)) as z:
+            with zipfile.ZipFile(io.BytesIO(zip_bytes)) as z:
                 logger.info(f"ZIP contains {len(z.infolist())} items")
                 
                 for file_info in z.infolist():
@@ -424,20 +424,20 @@ class GitHubIngestor:
                             continue
                         
                         with z.open(file_info) as f:
-                            content = f.read().decode('utf-8', errors='ignore')
+                            file_content = f.read().decode('utf-8', errors='ignore')
                         
-                        if not content.strip():
+                        if not file_content.strip():
                             continue
                         
                         logger.info(f"Processing: {file_path}")
                         
-                        metadata = self.extract_metadata(file_path, content)
-                        chunks = self.chunk_content(content)
+                        metadata = self.extract_metadata(file_path, file_content)
+                        file_chunks = self.chunk_content(file_content)
                         
-                        for chunk in chunks:
-                            chunk.update(metadata)
+                        for chunk_obj in file_chunks:
+                            chunk_obj.update(metadata)
                         
-                        all_chunks.extend(chunks)
+                        all_chunks.extend(file_chunks)
                         
                     except Exception as e:
                         logger.warning(f"Skipping {file_path}: {e}")

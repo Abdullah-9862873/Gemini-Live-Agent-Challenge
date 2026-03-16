@@ -3,7 +3,7 @@
 # =============================================================================
 # Phase: 2 - Backend Core Components
 # Purpose: Combine GitHub fetch, chunking, embedding, and Vector DB storage
-# Version: 2.0.0
+# Version: 8.1.0
 # =============================================================================
 
 from typing import List, Dict, Any, Optional
@@ -80,7 +80,7 @@ class IngestionPipeline:
         try:
             # Set repo for github ingestor
             self.github.repo = repo or settings.github_repo
-            logger.info(f"Using repo: {self.github.repo}")
+            logger.info(f"IngestionPipeline: Using sanitized repo: {self.github.repo}")
             # Step 1: Fetch and chunk repository content
             logger.info("Step 1: Fetching repository content...")
             chunks = self.github.fetch_and_chunk_repo(extensions=extensions)

@@ -16,7 +16,7 @@
 #   - GET  /ingest/status  : Get ingestion status
 # =============================================================================
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -71,7 +71,7 @@ app = FastAPI(
     - Phase 7: Integration & Testing
     - Phase 8: Deployment & Demo
     """,
-    version="4.0.0",
+    version="8.1.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -339,18 +339,25 @@ async def ingest_course(request: Optional[IngestRequest] = None):
         )
     
     # Get repo from request or use default
-    repo = request.repo if request and request.repo else settings.github_repo
+    repo_input = request.repo if request and request.repo else settings.github_repo
     
-    # Check if we have a repo to ingest (either from request or env)
-    if not repo:
+    # Check if we have a repo to ingest
+    if not repo_input:
         raise HTTPException(
             status_code=400,
             detail="GitHub repo not provided. Please provide a repo in the request body or set GITHUB_REPO environment variable"
         )
     
+    # Explicit sanitization in main.py
+    repo = repo_input.strip().rstrip("/")
+    if "github.com/" in repo:
+        repo = repo.split("github.com/")[-1]
+    if repo.endswith(".git"):
+        repo = repo[:-4]
+    
     extensions = request.extensions if request and request.extensions else [".md", ".txt", ".py", ".js", ".ts"]
     
-    logger.info(f"Starting ingestion for repo: {repo}")
+    logger.info(f"Starting ingestion for sanitized repo: {repo} (original: {repo_input})")
     logger.info(f"File extensions: {extensions}")
     
     try:

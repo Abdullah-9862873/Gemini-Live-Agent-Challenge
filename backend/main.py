@@ -812,11 +812,11 @@ async def global_exception_handler(request, exc):
 
 if __name__ == "__main__":
     host = os.getenv("BACKEND_HOST", "0.0.0.0")
-    port = int(os.getenv("BACKEND_PORT", "8000"))
+    port = int(os.getenv("PORT", os.getenv("BACKEND_PORT", "8000")))
     
     uvicorn.run(
         "main:app",
         host=host,
         port=port,
-        reload=True
+        reload=False
     )

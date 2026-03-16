@@ -49,17 +49,54 @@ class GitHubIngestor:
             repo: GitHub repository in format "owner/repo"
                   (uses config default if None)
         """
-        self.repo = repo or settings.github_repo
+        self._repo = self._clean_repo_name(repo or settings.github_repo)
         self.github_token = settings.github_token
         self.base_url = "https://api.github.com"
         
         # Set up headers for API requests
-        # Token increases rate limit from 60 to 5000 requests/hour
         self.headers = {
             "Accept": "application/vnd.github.v3+json"
         }
         if self.github_token:
             self.headers["Authorization"] = f"token {self.github_token}"
+    
+    @property
+    def repo(self) -> str:
+        return self._repo
+    
+    @repo.setter
+    def repo(self, value: str):
+        self._repo = self._clean_repo_name(value)
+    
+    def _clean_repo_name(self, repo: str) -> str:
+        """
+        Clean repository name to ensure 'owner/repo' format.
+        
+        Handles:
+        - Full URLs: https://github.com/owner/repo
+        - Slashes: /owner/repo/
+        - .git suffix: owner/repo.git
+        """
+        if not repo:
+            return ""
+        
+        # Remove trailing slash
+        repo = repo.strip().strip("/")
+        
+        # Remove github.com prefix if present
+        if "github.com/" in repo:
+            repo = repo.split("github.com/")[-1]
+            
+        # Remove .git suffix
+        if repo.endswith(".git"):
+            repo = repo[:-4]
+            
+        # Ensure owner/repo format
+        parts = repo.split("/")
+        if len(parts) >= 2:
+            return f"{parts[-2]}/{parts[-1]}"
+            
+        return repo
     
     def _make_request(self, endpoint: str) -> Dict[str, Any]:
         """
@@ -324,21 +361,32 @@ class GitHubIngestor:
         
         all_chunks = []
         
-        # Try main branch first, then master
-        branches = ["main", "master"]
+        # Step 1: Detect default branch via API (1 credit)
+        try:
+            repo_info = self.get_repo_info()
+            branch = repo_info.get("default_branch", "main")
+            logger.info(f"Detected default branch: {branch}")
+        except Exception as e:
+            logger.warning(f"Could not detect default branch, falling back to main: {e}")
+            branch = "main"
         
-        for branch in branches:
-            zip_url = f"https://github.com/{self.repo}/archive/refs/heads/{branch}.zip"
-            logger.info(f"Trying branch: {branch}")
+        # Step 2: Download ZIP
+        zip_url = f"https://github.com/{self.repo}/archive/refs/heads/{branch}.zip"
+        logger.info(f"Downloading ZIP from: {zip_url}")
+        
+        try:
             response = requests.get(zip_url, stream=True, timeout=60, allow_redirects=True)
+            if response.status_code != 200:
+                # If 'main' failed, try 'master' as a last resort fallback
+                if branch == "main":
+                    logger.info("Main branch failed, trying master fallback...")
+                    zip_url = f"https://github.com/{self.repo}/archive/refs/heads/master.zip"
+                    response = requests.get(zip_url, stream=True, timeout=60, allow_redirects=True)
             
-            if response.status_code == 200:
-                logger.info(f"Successfully downloaded ZIP from {branch} branch")
-                break
-            else:
-                logger.warning(f"Branch {branch} returned status {response.status_code}")
-        else:
-            raise Exception(f"Could not download repository {self.repo} - no valid branch found")
+            if response.status_code != 200:
+                raise Exception(f"HTTP {response.status_code}")
+        except Exception as e:
+            raise Exception(f"Could not download repository {self.repo} from branch {branch}: {str(e)}")
         
         # Limit download size (50MB max)
         max_size = 50 * 1024 * 1024

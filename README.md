@@ -32,7 +32,7 @@ An AI-powered tutor that transforms any GitHub programming course into an intera
   - PINECONE_ENVIRONMENT = us-east-1
 
 ### Frontend - Vercel
-- **URL**: (Coming soon)
+- **URL**: https://gemini-live-agent-challenge.vercel.app
 - **Platform**: Vercel (Next.js)
 - **Environment Variables**:
   - NEXT_PUBLIC_API_URL = https://abdullah9862873-gemini-live-agent-challenge.hf.space

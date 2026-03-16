@@ -1,39 +1,32 @@
 # =============================================================================
 # AI Multimodal Tutor - Backend Dependencies
 # =============================================================================
-# Phase: 1 - Project Setup & Infrastructure
+# Phase: 3 - RAG Pipeline
 # Purpose: Core backend dependencies for FastAPI, Vector DB, RAG, and LLM
-# Version: 1.0.0
+# Version: 3.0.0
 # =============================================================================
 
 # FastAPI & Server
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
-python-multipart==0.0.6
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.9
 
 # Vector Database (Pinecone)
-pinecone-client==3.0.1
+pinecone-client>=3.2.0
 
 # LLM & Embeddings
-google-generativeai==0.5.3
-sentence-transformers==2.4.0
+google-generativeai>=0.5.3
+sentence-transformers>=2.4.0
 
 # Environment & Config
-python-dotenv==1.0.0
-pydantic==2.5.3
-pydantic-settings==2.1.0
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
 
 # HTTP & API
-requests==2.31.0
-httpx==0.26.0
-
-# Google Cloud
-google-cloud-texttospeech==2.16.3
-google-cloud-aiplatform==1.38.1
+requests>=2.31.0
+httpx>=0.26.0
 
 # Utilities
-numpy==1.26.3
-aiofiles==23.2.1
-
-# CORS
-starlette==0.35.1
+numpy>=1.26.0
+aiofiles>=23.2.0

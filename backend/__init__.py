@@ -1,9 +1,9 @@
 # =============================================================================
 # AI Multimodal Tutor - Backend Package
 # =============================================================================
-# Phase: 2 - Backend Core Components
+# Phase: 3 - RAG Pipeline
 # Purpose: Package initialization file
-# Version: 2.0.0
+# Version: 3.0.0
 # =============================================================================
 
 """
@@ -13,8 +13,10 @@ This package contains all backend components:
 - config: Configuration management
 - vector_db: Pinecone Vector DB operations
 - embeddings: Sentence transformer embeddings
-- github_ingest: GitHub repository ingestion
+- github_ingest: GitHub repository ingestion (public repos only)
 - ingestion_pipeline: Complete ingestion workflow
+- rag_pipeline: Retrieval-Augmented Generation pipeline
+- prompt_templates: Prompt templates for RAG + LLM
 """
 
-__version__ = "2.0.0"
+__version__ = "3.0.0"

@@ -1,18 +1,19 @@
 # =============================================================================
 # AI Multimodal Tutor - Main Application Entry Point
 # =============================================================================
-# Phase: 2 - Backend Core Components (UPDATED)
-# Purpose: FastAPI backend server setup with ingestion endpoints
-# Version: 2.0.0
+# Phase: 3 - RAG Pipeline (UPDATED)
+# Purpose: FastAPI backend with RAG pipeline endpoints
+# Version: 3.0.0
 #
 # Endpoints:
-#   - GET  /health        : Health check
-#   - GET  /              : API information
-#   - POST /ask           : Text question (Phase 4-5)
-#   - POST /ask/voice     : Voice question (Phase 4-5)
-#   - POST /ask/upload    : Code/image upload (Phase 4-5)
-#   - POST /ingest        : Trigger course ingestion (Phase 2 - NOW IMPLEMENTED)
-#   - GET  /ingest/status : Get ingestion status
+#   - GET  /health         : Health check
+#   - GET  /               : API information
+#   - POST /ask            : Text question with RAG (Phase 3-4)
+#   - POST /rag/query      : Direct RAG query (Phase 3)
+#   - POST /ask/voice      : Voice question (Phase 6)
+#   - POST /ask/upload     : Code/image upload (Phase 6)
+#   - POST /ingest         : Trigger course ingestion (Phase 2 - IMPLEMENTED)
+#   - GET  /ingest/status  : Get ingestion status
 # =============================================================================
 
 from fastapi import FastAPI, HTTPException
@@ -51,14 +52,14 @@ app = FastAPI(
     ## Phases
     - Phase 1: Project Setup (COMPLETE)
     - Phase 2: Backend Core Components (COMPLETE)
-    - Phase 3: RAG Pipeline
+    - Phase 3: RAG Pipeline (COMPLETE)
     - Phase 4: LLM Integration
     - Phase 5: Frontend Development
     - Phase 6: Multimodal I/O Features
     - Phase 7: Integration & Testing
     - Phase 8: Deployment & Demo
     """,
-    version="2.0.0",
+    version="3.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
@@ -91,11 +92,11 @@ async def root():
     """
     return {
         "name": "AI Multimodal Tutor API",
-        "version": "2.0.0",
+        "version": "3.0.0",
         "status": "running",
-        "phase": "Phase 2: Backend Core Components Complete",
+        "phase": "Phase 3: RAG Pipeline Complete",
         "docs": "/docs",
-        "message": "Welcome to AI Multimodal Tutor! Phases 3-8 pending."
+        "message": "Welcome to AI Multimodal Tutor! Phases 4-8 pending."
     }
 
 
@@ -109,13 +110,14 @@ async def health_check():
     """
     return {
         "status": "healthy",
-        "phase": "Phase 2: Backend Core Components",
-        "version": "2.0.0",
+        "phase": "Phase 3: RAG Pipeline",
+        "version": "3.0.0",
         "components": {
             "fastapi": "running",
             "pinecone": "configured",
             "embeddings": "configured",
-            "github": "configured"
+            "github": "configured",
+            "rag_pipeline": "configured"
         }
     }
 
@@ -255,27 +257,193 @@ async def get_ingestion_status():
 
 
 # =============================================================================
+# REQUEST MODELS (Updated for Phase 3)
+# =============================================================================
+
+class AskRequest(BaseModel):
+    """
+    Request model for ask endpoint.
+    """
+    question: str
+    top_k: Optional[int] = None
+    threshold: Optional[float] = None
+    prompt_type: Optional[str] = "default"
+
+
+class AskResponse(BaseModel):
+    """
+    Response model for ask endpoint.
+    """
+    question: str
+    answer: str
+    has_context: bool
+    context_used: bool
+    sources: List[str] = []
+    num_contexts: int = 0
+    top_score: float = 0.0
+
+
+# =============================================================================
 # PLACEHOLDER ENDPOINTS (To be implemented in future phases)
 # =============================================================================
 
-@app.post("/ask", tags=["Q&A"])
-async def ask_question(question: str):
+@app.post("/ask", tags=["Q&A"], response_model=AskResponse)
+async def ask_question(request: AskRequest):
     """
     Ask a text question
     
-    Phase: 4-5 (RAG Pipeline + LLM Integration)
+    Phase: 3-4 (RAG Pipeline + LLM Integration)
     
-    Processes a text question and returns a multimodal answer
-    grounded in the course content.
+    Processes a text question using the RAG pipeline to retrieve
+    relevant context from the course material, then generates
+    an answer grounded in the course content.
+    
+    Args:
+        question: The user's question
+        top_k: Number of context results (optional, uses config default)
+        threshold: Similarity threshold (optional, uses config default)
+        prompt_type: Type of prompt (default, code, step_by_step)
+    
+    Returns:
+        AskResponse with answer and context information
+    
+    Example:
+        POST /ask
+        {
+            "question": "What is merge sort?",
+            "top_k": 5,
+            "threshold": 0.7
+        }
     """
-    return {
-        "message": "Endpoint not yet implemented",
-        "phase": "Pending: Phase 4-5",
-        "question": question
-    }
+    from backend.rag_pipeline import RAGPipeline, check_context_available
+    from backend.config import validate_all_configs
+    
+    logger.info(f"Question received: {request.question}")
+    
+    # Validate configurations
+    configs = validate_all_configs()
+    
+    if not configs["pinecone"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Pinecone API key not configured"
+        )
+    
+    # Check if context is available
+    has_indexed_content = check_context_available()
+    
+    if not has_indexed_content:
+        logger.warning("No content found in Vector DB. Please run /ingest first.")
+        return AskResponse(
+            question=request.question,
+            answer="No course content has been indexed yet. Please run the /ingest endpoint first to add course material to the knowledge base.",
+            has_context=False,
+            context_used=False,
+            sources=[],
+            num_contexts=0,
+            top_score=0.0
+        )
+    
+    try:
+        # Run RAG pipeline to get context
+        rag = RAGPipeline(
+            top_k=request.top_k,
+            threshold=request.threshold
+        )
+        
+        rag_result = rag.run(
+            query=request.question,
+            include_sources=True
+        )
+        
+        # Extract context information
+        has_relevant_context = rag_result.get("has_relevant_context", False)
+        context_text = rag_result.get("context_text", "")
+        contexts = rag_result.get("contexts", [])
+        
+        # Extract sources
+        sources = list(set([ctx.get("source", "") for ctx in contexts if ctx.get("source")]))
+        
+        # For Phase 3, we return the context directly
+        # Phase 4 will integrate LLM for actual answer generation
+        if has_relevant_context:
+            # Build a simple answer from context (Phase 3 only)
+            # Phase 4 will replace this with LLM-generated answer
+            answer_text = f"Found {len(contexts)} relevant context(s) from the course material.\n\n"
+            answer_text += "Context retrieved:\n" + context_text[:1000]
+            if len(context_text) > 1000:
+                answer_text += "\n... (truncated)"
+            
+            answer_text += "\n\nNote: This is raw context retrieval. LLM integration (Phase 4) will generate proper answers."
+        else:
+            answer_text = "No relevant context found in the course material for your question. "
+            answer_text += "Try rephrasing your question or ingest more course content."
+        
+        return AskResponse(
+            question=request.question,
+            answer=answer_text,
+            has_context=has_indexed_content,
+            context_used=has_relevant_context,
+            sources=sources,
+            num_contexts=len(contexts),
+            top_score=rag_result.get("top_score", 0.0)
+        )
+    
+    except Exception as e:
+        logger.error(f"Question answering failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to answer question: {str(e)}"
+        )
 
 
-@app.post("/ask/voice", tags=["问答"])
+@app.post("/rag/query", tags=["RAG"])
+async def rag_query(
+    query: str,
+    top_k: int = 5,
+    threshold: float = 0.7
+):
+    """
+    Direct RAG query endpoint
+    
+    Phase: 3 (RAG Pipeline)
+    
+    Returns the raw retrieved context without LLM processing.
+    Useful for testing the RAG pipeline.
+    
+    Args:
+        query: Search query
+        top_k: Number of results
+        threshold: Similarity threshold
+    
+    Returns:
+        RAG pipeline results with contexts
+    """
+    from backend.rag_pipeline import RAGPipeline
+    
+    try:
+        rag = RAGPipeline(top_k=top_k, threshold=threshold)
+        result = rag.run(query=query)
+        
+        return {
+            "status": "success",
+            "phase": "Phase 3: RAG Pipeline",
+            "query": query,
+            "has_relevant_context": result.get("has_relevant_context", False),
+            "contexts": result.get("contexts", []),
+            "num_results": result.get("num_results", 0),
+            "top_score": result.get("top_score", 0.0)
+        }
+    
+    except Exception as e:
+        logger.error(f"RAG query failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"RAG query failed: {str(e)}"
+        )
+
+
+@app.post("/ask/voice", tags=["Q&A"])
 async def ask_voice():
     """
     Ask a voice question
@@ -322,7 +490,7 @@ async def global_exception_handler(request, exc):
         content={
             "error": "Internal Server Error",
             "message": str(exc),
-            "phase": "Phase 2"
+            "phase": "Phase 3"
         }
     )
 

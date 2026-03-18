@@ -108,9 +108,6 @@ PINECONE_INDEX_NAME=repo-vectors
 # Get your free API key at: https://console.groq.com/ (no billing required)
 GROQ_API_KEY=your_groq_api_key
 
-# GitHub Token (optional, for higher rate limits)
-GITHUB_TOKEN=your_github_token
-
 # Optional settings
 EMBEDDING_MODEL=all-MiniLM-L6-v2
 TOP_K_RESULTS=5

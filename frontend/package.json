@@ -1,7 +1,7 @@
 {
-  "name": "ai-tutor-frontend",
-  "version": "4.0.0",
-  "description": "AI Multimodal Tutor - Frontend Application (Phase 5)",
+  "name": "making-repos-speakable",
+  "version": "1.0.0",
+  "description": "Give brain and tongue to your GitHub repositories. Ask anything about any codebase.",
   "private": true,
   "scripts": {
     "dev": "next dev",

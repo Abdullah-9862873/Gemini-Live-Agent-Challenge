@@ -63,8 +63,8 @@ An AI-powered application that transforms GitHub repositories into interactive, 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Abdullah-9862873/Gemini-Live-Agent-Challenge.git
-cd Gemini-Live-Agent-Challenge
+git clone https://github.com/Abdullah-9862873/Making-Repos-Speakable.git
+cd Making-Repos-Speakable
 ```
 
 ### 2. Backend Setup
@@ -189,7 +189,7 @@ Click the **Clear** button to reset the vector database and start fresh.
 ## Project Structure
 
 ```
-Gemini-Live-Agent-Challenge/
+Making-Repos-Speakable/
 ├── backend/
 │   ├── main.py              # FastAPI application entry point
 │   ├── config.py            # Environment configuration

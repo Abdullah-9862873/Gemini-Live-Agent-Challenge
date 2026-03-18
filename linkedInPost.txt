@@ -1,0 +1,54 @@
+🚀 When I Was in First Year of University...
+
+Every time I asked a senior for their project code, they'd just drop a GitHub link in the chat.
+
+"Sure, here's the repo!"
+
+And then came the real struggle:
+
+❓ "How do I run this locally?"
+❓ "What are the setup steps?"
+❓ "Where is the XYZ function implemented?"
+
+The README only explained things to some extent. Asking again and again felt embarrassing. Going through hundreds of files alone felt exhausting.
+
+There had to be a better way.
+
+🤖 Today, LLMs have made everything smoother. But there was no platform specifically designed for this purpose.
+
+That's when I built "Making Repos Speakable" — giving brain and tongue to repositories so they can communicate with you directly.
+
+💬 Ask: "How do I run you?"
+📖 It answers with step-by-step setup instructions.
+
+💬 Ask: "Where is the XYZ function implemented?"
+📖 It tells you the exact file path and explains its purpose.
+
+💬 Ask: "Explain this entire codebase to me"
+📖 It breaks down the architecture for you.
+
+It's like having a conversation with the code itself!
+
+🔧 TWO MODES:
+1️⃣ GitHub Repo Mode — Ingest any public repo and chat with it
+2️⃣ Single File Mode — Upload a messy file you're struggling with and get focused answers
+
+⚡ TECH STACK:
+• Frontend: Next.js + TypeScript + CSS
+• Backend: FastAPI (Python)
+• LLM: Groq API (LLaMA 3.1)
+• Vector DB: Pinecone
+• Embeddings: Sentence Transformers
+
+🏗️ ARCHITECTURE:
+User → Frontend → FastAPI → GitHub API (validation) | Pinecone (context) | Groq (answer)
+
+The flow is simple:
+GitHub repo → chunks → embeddings → Pinecone
+Question → embedding → Pinecone (context) → Groq (answer) → User
+
+No more guessing. No more endless scrolling. Your repos finally have a voice.
+
+Would love to hear your thoughts! 👇
+
+#AI #LLM #RAG #GitHub #DeveloperTools #OpenSource #TechInnovation #MachineLearning #Python #NextJS

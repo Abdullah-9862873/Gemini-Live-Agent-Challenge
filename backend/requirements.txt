@@ -1,24 +1,17 @@
-# =============================================================================
-# AI Multimodal Tutor - Backend Dependencies
-# =============================================================================
-# Phase: 8 - Hugging Face Migration
-# Purpose: Core backend dependencies for FastAPI, Vector DB, RAG, and LLM
-# Version: 8.0.0
-# =============================================================================
+# Making Repos Speakable - Backend Dependencies
 
 # FastAPI & Server
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 python-multipart>=0.0.9
 
-# Rate Limiting
-slowapi>=0.1.9
+# Hugging Face Spaces
+gradio>=4.0.0
 
 # Vector Database (Pinecone)
 pinecone>=4.0.0
 
 # LLM & Embeddings
-# Hugging Face Inference API (Primary LLM - Free)
 huggingface_hub>=0.20.0
 sentence-transformers>=2.4.0
 
